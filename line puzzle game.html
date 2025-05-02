@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Single Stroke Connect - With Music & Theme!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        /* Basic Reset & Body Styles */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Luckiest Guy', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); /* Light BG */
+            background-size: cover; background-position: center center; background-repeat: no-repeat; background-attachment: fixed;
+            transition: background 0.3s ease;
+            color: #444; /* Light Text */
+        }
+        /* Main Game Container */
+        .game-container {
+             width: 100%; height: 100%; max-width: 450px;
+             background-color: rgba(255, 255, 255, 0.9); /* Light container */
+             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+             border-radius: 20px; border: 3px solid #fff; /* Light border */
+             display: flex; flex-direction: column; position: relative; overflow: hidden;
+             transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        /* View Styles (Common) */
+        .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; padding: 20px; padding-top: env(safe-area-inset-top, 20px); padding-bottom: env(safe-area-inset-bottom, 20px); padding-left: env(safe-area-inset-left, 20px); padding-right: env(safe-area-inset-right, 20px); background-color: transparent; }
+        .view.active { display: flex; }
+        /* Headings */
+        h1, h2 {
+            text-align: center; margin-bottom: 15px;
+            color: #6a1b9a; /* Light heading */
+            text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.7); /* Light shadow */
+            letter-spacing: 1px; flex-shrink: 0;
+             transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+        h1 { font-size: 2.4em; } h2 { font-size: 1.8em; }
+        /* Buttons */
+        button { /* Default style for non-game/menu buttons */
+            padding: 9px 22px; font-family: 'Luckiest Guy', cursive; font-size: 1.1em;
+            border: none; border-radius: 25px;
+            background: linear-gradient(145deg, #8e44ad, #9b59b6); /* Light button bg */
+            color: white; /* Light button text */
+            cursor: pointer; transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease;
+            margin: 5px; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15), inset 0 -2px 3px rgba(0,0,0,0.1);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3); flex-shrink: 0;
+        }
+        button:hover { background: linear-gradient(145deg, #9b59b6, #a569bd); transform: translateY(-2px); }
+        button:active { transform: translateY(1px) scale(0.96); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 -1px 2px rgba(0,0,0,0.1); }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1); transform: none; color: #7f8c8d; text-shadow: none; }
+
+        /* --- Side Menu Styles --- */
+        #menu-trigger {
+            position: absolute; /* Position relative to container */
+            top: 15px; right: 15px; z-index: 101;
+            background-color: rgba(142, 68, 173, 0.7); color: white;
+            border: none; border-radius: 50%; width: 40px; height: 40px;
+            font-size: 1.5em; line-height: 40px; text-align: center;
+            padding: 0; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: background-color 0.2s ease, transform 0.1s ease, color 0.3s ease;
+            display: none; /* Initially hidden, shown via JS */
+        }
+        #menu-trigger:hover { background-color: rgba(155, 89, 182, 0.9); }
+        #menu-trigger:active { transform: scale(0.95); }
+
+        #side-menu {
+            position: fixed; top: 0; right: -220px; width: 200px; height: 100%;
+            background-color: rgba(255, 255, 255, 0.95); box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.2);
+            transition: right 0.3s ease-in-out, background-color 0.3s ease; z-index: 100;
+            padding: 20px 15px; display: flex; flex-direction: column;
+            align-items: center; gap: 20px; overflow-y: auto;
+        }
+        #side-menu.open { right: 0; }
+        #menu-player-name {
+            font-weight: bold; margin-bottom: 10px; text-align: center;
+            word-break: break-all; color: #6a1b9a;
+            transition: color 0.3s ease; font-size: 1.1em;
+        }
+        /* Style for BOTH Dark Mode Toggle Buttons */
+        #side-menu-dark-mode-toggle, #main-menu-dark-mode-toggle {
+             /* Common styles */
+             width: 90%;
+             font-size: 1.0em; /* Adjust size as needed */
+             padding: 8px 15px;
+             margin-top: 5px;
+             /* Specific light mode colors */
+             background: #e1bee7; color: #6a1b9a;
+             text-shadow: none;
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+         #side-menu-dark-mode-toggle:hover, #main-menu-dark-mode-toggle:hover {
+             background: #ce93d8; transform: none; /* Disable hover transform */
+        }
+         #side-menu-dark-mode-toggle { /* Side menu specific */
+             position: static;
+         }
+         #main-menu-dark-mode-toggle { /* Main menu specific */
+             margin-top: 15px; /* Space above the button on main menu */
+             width: auto; /* Allow button to size naturally */
+             max-width: 200px; /* Limit width */
+         }
+
+
+        /* === Main Menu Styling === */
+         #main-menu {
+            padding-top: 30px; /* Adjusted padding */
+            justify-content: center; /* Center items vertically */
+            align-items: center; /* Center items horizontally */
+            position: relative;
+         }
+         #main-menu h1 { /* Game Title */
+             font-size: 2.8em; /* Larger title */
+             color: #e8dff5; /* Lighter color */
+             text-shadow: 3px 3px 0px #6a1b9a, 5px 5px 5px rgba(0,0,0,0.3); /* More pronounced shadow */
+             margin-bottom: 30px; /* More space below title */
+             line-height: 1.1;
+         }
+
+         /* === Player Name Entry Box (New Container) === */
+         .player-entry-box {
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             padding: 25px 20px; /* Internal spacing */
+             margin: 10px auto 20px auto; /* Spacing around the box */
+             max-width: 90%;
+             width: 350px; /* Fixed width for consistency */
+             background: linear-gradient(145deg, #a1887f, #795548); /* Wood-like gradient */
+             border: 6px solid #5d4037; /* Darker brown border */
+             border-radius: 30px; /* Rounded corners */
+             box-shadow: 0 5px 15px rgba(0,0,0,0.3), /* Outer shadow */
+                         inset 0 2px 5px rgba(255,255,255,0.2), /* Inner highlight */
+                         inset 0 -2px 5px rgba(0,0,0,0.2); /* Inner shadow */
+         }
+         .player-entry-box h2 { /* "Enter Your Name" Title */
+             font-family: 'Luckiest Guy', cursive;
+             font-size: 1.9em; /* Large size */
+             color: #1e88e5; /* Blue color */
+             text-align: center;
+             margin-bottom: 15px;
+             /* Simulate white outline with multiple shadows */
+             text-shadow:
+                -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, /* White outline */
+                -3px -3px 2px rgba(0,0,0,0.3), 3px 3px 2px rgba(0,0,0,0.3); /* Drop shadow */
+            letter-spacing: 1px;
+            padding: 0;
+         }
+         .player-name-section { /* Hide original label container */
+            display: none;
+         }
+         #player-name-input { /* Input field styling */
+            width: 90%; /* Relative width inside the box */
+            margin-bottom: 20px; /* Space before button */
+            background: linear-gradient(145deg, #efebe9, #d7ccc8); /* Light stone/tan */
+            border: 3px solid #a1887f; /* Mid-brown border */
+            border-radius: 15px; /* Rounded corners */
+            padding: 12px 18px; /* More padding */
+            font-size: 1.3em; /* Larger text */
+            text-align: center; /* Center placeholder and input text */
+            color: #3e2723; /* Dark brown text */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); /* Inset shadow */
+            font-family: Arial, sans-serif; /* Use a standard font for input */
+            outline: none; /* Remove default focus outline */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+         }
+          #player-name-input:focus {
+              border-color: #c7a49b; /* Lighter border on focus */
+              box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 5px rgba(161, 136, 127, 0.5); /* Add outer glow */
+         }
+
+         #start-game-button { /* Button styling to match input frame */
+            width: 70%; /* Relative width */
+            padding: 10px 15px;
+            font-size: 1.4em; /* Large button text */
+            font-family: 'Luckiest Guy', cursive;
+            color: #4e342e; /* Dark brown text */
+            background: linear-gradient(145deg, #efebe9, #d7ccc8); /* Match input background */
+            border: 3px solid #a1887f; /* Match input border */
+            border-radius: 20px; /* Rounded corners */
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2), inset 0 -2px 3px rgba(0,0,0,0.1); /* Standard shadow */
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5); /* Light shadow on text */
+            margin: 0 auto; /* Center button */
+            transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+         }
+         #start-game-button:hover {
+            background: linear-gradient(145deg, #ffffff, #efebe9); /* Lighter on hover */
+            transform: translateY(-2px);
+             box-shadow: 0 5px 8px rgba(0,0,0,0.25), inset 0 -2px 3px rgba(0,0,0,0.1);
+         }
+          #start-game-button:active {
+             transform: translateY(1px) scale(0.98);
+             box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 -1px 2px rgba(0,0,0,0.1);
+         }
+        /* === End Player Name Entry Box Styling === */
+
+
+        /* Level Select */
+        #level-select { padding-top: 15px; padding-bottom: 15px; } #level-select h2 { margin-bottom: 10px; }
+        #level-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 12px; /* Increased gap */
+            width: 100%; max-width: 100%; padding: 5px; overflow-y: auto; flex-grow: 1; min-height: 100px; max-height: calc(100% - 100px);
+        }
+        .level-button {
+            aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;
+            font-size: 1.3em; font-weight: bold;
+            /* Default: Yellow */
+            background-color: #ffeb3b; color: #5d4037; border: 2px solid #fbc02d;
+            border-radius: 10px; cursor: pointer; position: relative; transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); overflow: hidden; text-align: center; line-height: 1;
+            text-shadow: none; /* Cleaner look */
+        }
+        .level-button:hover {
+            background-color: #fdd835; transform: scale(1.05); border-color: #f9a825;
+        }
+        .level-button.completed {
+            background-color: #81c784; border-color: #4caf50; color: #1b5e20;
+        }
+        .level-button.completed::after {
+             content: '★'; position: absolute; top: 1px; right: 2px; color: #fbc02d;
+             font-size: 0.7em; text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+        }
+        .level-button.locked {
+            background-color: #bdbdbd; color: #424242; border-color: #9e9e9e;
+            cursor: not-allowed; box-shadow: none; transform: none;
+        }
+        .level-select-controls { margin-top: 10px; flex-shrink: 0; }
+
+        /* Game View */
+        #game-view { padding: 10px; justify-content: space-between; }
+        #game-header {
+            width: 100%; display: grid; grid-template-columns: auto 1fr auto;
+            align-items: center; padding: 0 5px 10px 5px; gap: 10px;
+            font-size: 1.3em; color: #6a1b9a; font-weight: normal;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5); flex-shrink: 0;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+        #game-header button { /* Back button styling */
+            padding: 4px 12px; font-size: 0.8em; background: #e1bee7; color: #6a1b9a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); text-shadow: none;
+             /* Revert to default button style for this specific button if needed */
+        }
+        #game-header button:hover { background: #ce93d8; }
+        .game-info { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #level-indicator { font-size: 1em; line-height: 1.1; }
+        #player-name-display {
+            font-size: 0.65em; color: #8e44ad; text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+            margin-top: -2px; font-weight: normal; max-width: 100px; overflow: hidden;
+            white-space: nowrap; text-overflow: ellipsis; transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+         #coin-display {
+            font-size: 0.9em; font-weight: normal; color: #6a1b9a; background-color: rgba(255, 255, 255, 0.6);
+            padding: 3px 8px; border-radius: 10px; text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+            transition: color 0.3s ease, background-color 0.3s ease, text-shadow 0.3s ease; white-space: nowrap;
+        }
+        #canvas-container {
+            width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center;
+            margin-bottom: 10px; background-color: rgba(255, 255, 255, 0.7); border: 3px dashed #ce93d8;
+             border-radius: 15px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); min-height: 250px;
+             transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        #gameCanvas { display: block; max-width: 100%; max-height: 100%; cursor: pointer; }
+        #game-controls { display: flex; justify-content: center; align-items: center; width: 100%; padding: 5px 0; flex-shrink: 0; }
+        #reset-button, #undo-button { /* Use default button styles unless overridden */ }
+        #reset-button::before { content: "↻ "; font-size: 0.9em; }
+        #undo-button::before { content: "↶ "; font-size: 0.9em; }
+        #skip-level-button {
+             background: linear-gradient(145deg, #ff9800, #fb8c00); font-size: 0.9em; padding: 7px 15px;
+         }
+        #skip-level-button:hover { background: linear-gradient(145deg, #ffa726, #ff9800); }
+        #skip-level-button:disabled { background: #9e9e9e; color: #616161; cursor: not-allowed; opacity: 0.7; }
+
+        /* Level Complete View */
+        #level-complete {
+            justify-content: center; text-align: center;
+            background: radial-gradient(circle, rgba(255,235,59,0.8) 0%, rgba(255,193,7,0.5) 100%);
+             transition: background 0.3s ease;
+        }
+        #level-complete h2 {
+            font-size: 3.0em; color: #4caf50; text-shadow: 3px 3px 0px #fff, 5px 5px 0px rgba(0,0,0,0.15);
+             margin-bottom: 30px; transform: rotate(-5deg); transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+        #level-complete-controls { flex-shrink: 0; }
+        #level-complete-controls button { margin: 10px; transform: scale(1.0); }
+        #next-level-button { background: linear-gradient(145deg, #66bb6a, #4caf50); }
+        #next-level-button:hover { background: linear-gradient(145deg, #81c784, #66bb6a); }
+
+         /* Mobile Specific Overrides */
+        @media (max-width: 480px) {
+            .game-container { border-radius: 0; border: none; max-width: none; }
+            .view { padding: 15px 10px; padding-top: env(safe-area-inset-top, 15px); padding-bottom: env(safe-area-inset-bottom, 15px); padding-left: env(safe-area-inset-left, 10px); padding-right: env(safe-area-inset-right, 10px); }
+            #main-menu { padding-top: 50px; } /* More space */
+            #main-menu h1 { font-size: 2.2em; margin-bottom: 20px; } /* Slightly smaller */
+             .player-entry-box { width: 100%; padding: 20px 15px; border-width: 4px;}
+             .player-entry-box h2 { font-size: 1.6em; }
+             #player-name-input { font-size: 1.1em; padding: 10px 15px; }
+             #start-game-button { font-size: 1.2em; padding: 8px 12px; width: 80%; }
+             #main-menu-dark-mode-toggle { font-size: 0.9em; padding: 6px 12px;}
+
+            #menu-trigger { top: 10px; right: 10px; width: 35px; height: 35px; font-size: 1.3em; line-height: 35px;}
+            h1 { font-size: 2.0em; } h2 { font-size: 1.5em; }
+            button { font-size: 1.0em; padding: 8px 18px; margin: 4px; }
+            #level-grid {
+                 grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 2px;
+                 max-height: calc(100% - 90px);
+            }
+            .level-button { font-size: 1.2em; border-width: 2px; border-radius: 8px; }
+            .level-button.completed::after { font-size: 0.6em; right: 1px; top: 1px; }
+            #game-header { font-size: 1.1em; padding-bottom: 8px; gap: 5px; }
+            #game-header button { padding: 3px 10px; font-size: 0.75em; }
+            #player-name-display { font-size: 0.6em; max-width: 70px;}
+            #coin-display { font-size: 0.8em; padding: 2px 6px;}
+            #canvas-container { border-width: 2px; border-radius: 10px; margin-bottom: 8px; }
+            #game-controls button { margin: 4px 8px; }
+             #skip-level-button { font-size: 0.8em; padding: 6px 12px; }
+            #level-complete h2 { font-size: 2.4em; margin-bottom: 25px; }
+            #level-complete-controls button { margin: 8px; }
+        }
+
+        /* --- Audio CSS --- */
+        #background-music { display: none; }
+
+        /* --- Dark Mode Theme Overrides --- */
+        body.dark-mode { background: linear-gradient(135deg, #2c3e50 0%, #4c5a65 100%); color: #ccc; }
+        body.dark-mode .game-container { background-color: rgba(40, 40, 55, 0.9); border-color: #666; }
+        body.dark-mode h1, body.dark-mode h2:not(.player-entry-box h2) { color: #e8dff5; text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.4); }
+        /* Keep default button styles for dark mode unless overridden */
+        body.dark-mode button { background: linear-gradient(145deg, #5a4a63, #7b6a83); color: #eee; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); }
+        body.dark-mode button:hover { background: linear-gradient(145deg, #7b6a83, #8c7a94); }
+        body.dark-mode button:disabled { background: #555; color: #888; text-shadow: none; }
+
+        body.dark-mode #main-menu h1 { /* Dark Mode Game Title */
+             color: #e8dff5; /* Keep light */
+             text-shadow: 3px 3px 0px #3e2723, 5px 5px 5px rgba(0,0,0,0.5); /* Darker base shadow */
+        }
+        /* === Dark Mode Player Entry Box Styling === */
+         body.dark-mode .player-entry-box {
+             background: linear-gradient(145deg, #4e342e, #3e2723); /* Darker Wood */
+             border-color: #2a1a16; /* Very dark border */
+             box-shadow: 0 5px 15px rgba(0,0,0,0.5), /* Darker outer shadow */
+                         inset 0 2px 5px rgba(255,255,255,0.1), /* Muted inner highlight */
+                         inset 0 -2px 5px rgba(0,0,0,0.4); /* Darker Inner shadow */
+         }
+         body.dark-mode .player-entry-box h2 { /* Dark Mode "Enter Your Name" */
+             color: #64b5f6; /* Lighter Blue */
+             /* Keep the white shadow for outline, adjust drop shadow */
+             text-shadow:
+                -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff,
+                -3px -3px 2px rgba(0,0,0,0.5), 3px 3px 2px rgba(0,0,0,0.5);
+         }
+         body.dark-mode #player-name-input {
+            background: linear-gradient(145deg, #5d4037, #4e342e); /* Dark stone/tan */
+            border-color: #6d4c41; /* Mid-dark border */
+            color: #efebe9; /* Light text */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+         }
+         body.dark-mode #player-name-input:focus {
+             border-color: #8d6e63;
+             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 0 5px rgba(141, 110, 99, 0.5);
+         }
+         body.dark-mode #start-game-button {
+             color: #eceff1; /* Light text */
+             background: linear-gradient(145deg, #5d4037, #4e342e); /* Match input */
+             border-color: #6d4c41; /* Match input */
+             box-shadow: 0 3px 5px rgba(0,0,0,0.4), inset 0 -2px 3px rgba(0,0,0,0.2);
+             text-shadow: 1px 1px 0px rgba(0,0,0,0.4);
+         }
+          body.dark-mode #start-game-button:hover {
+             background: linear-gradient(145deg, #6d4c41, #5d4037);
+             box-shadow: 0 5px 8px rgba(0,0,0,0.5), inset 0 -2px 3px rgba(0,0,0,0.2);
+         }
+         body.dark-mode #start-game-button:active {
+             box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(0,0,0,0.2);
+         }
+         /* === End Dark Mode Player Entry Box Styling === */
+
+         /* Dark Mode Toggle Button Styling */
+        body.dark-mode #side-menu-dark-mode-toggle,
+        body.dark-mode #main-menu-dark-mode-toggle {
+             background: #5a4a63; color: #e8dff5;
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+         }
+         body.dark-mode #side-menu-dark-mode-toggle:hover,
+         body.dark-mode #main-menu-dark-mode-toggle:hover {
+             background: #7b6a83;
+         }
+
+
+        body.dark-mode #menu-trigger { background-color: rgba(90, 74, 99, 0.8); color: #ddd; }
+        body.dark-mode #menu-trigger:hover { background-color: rgba(123, 106, 131, 0.9); }
+        body.dark-mode #side-menu { background-color: rgba(40, 40, 55, 0.95); }
+        body.dark-mode #menu-player-name { color: #e8dff5; }
+
+
+        /* Dark Mode Level Buttons (High Contrast) */
+        body.dark-mode .level-button {
+            background-color: #795548; color: #ffffff; border-color: #5d4037;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
+        }
+        body.dark-mode .level-button:hover { background-color: #8d6e63; border-color: #a1887f; }
+        body.dark-mode .level-button.completed {
+            background-color: #2e7d32; border-color: #1b5e20; color: #ffffff;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        }
+        body.dark-mode .level-button.completed::after { color: #ffeb3b; text-shadow: 1px 1px 0px rgba(0,0,0,0.5); }
+        body.dark-mode .level-button.locked {
+            background-color: #424242; color: #cccccc; border-color: #313131;
+             text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+        }
+        /* --- End Dark Mode Level Buttons --- */
+
+        body.dark-mode #game-header { color: #e8dff5; text-shadow: 1px 1px 0px rgba(0,0,0,0.4); }
+        body.dark-mode #game-header button { background: #7b6a83; color: #e8dff5; /* Revert non-menu buttons back */ }
+        body.dark-mode #game-header button:hover { background: #8c7a94; }
+        body.dark-mode #player-name-display { color: #c1a8e0; text-shadow: 1px 1px 0px rgba(0,0,0,0.4); }
+        body.dark-mode #coin-display { color: #e8dff5; background-color: rgba(0, 0, 0, 0.3); text-shadow: 1px 1px 0px rgba(0,0,0,0.4); }
+        body.dark-mode #canvas-container { background-color: rgba(40, 40, 55, 0.7); border-color: #7b6a83; }
+        body.dark-mode #skip-level-button { background: linear-gradient(145deg, #a66300, #c27e1a); }
+        body.dark-mode #skip-level-button:hover { background: linear-gradient(145deg, #c27e1a, #d1892c); }
+        body.dark-mode #skip-level-button:disabled { background: #555; color: #888; }
+        body.dark-mode #level-complete { background: radial-gradient(circle, rgba(60,179,113,0.8) 0%, rgba(46,139,87,0.6) 100%); }
+        body.dark-mode #level-complete h2 { color: #a2e8c3; text-shadow: 3px 3px 0px #444, 5px 5px 0px rgba(0,0,0,0.3); }
+        body.dark-mode #next-level-button { background: linear-gradient(145deg, #3e8e41, #2e6b2e); }
+        body.dark-mode #next-level-button:hover { background: linear-gradient(145deg, #4caf50, #3e8e41); }
+        /* --- End Dark Mode --- */
+
+    </style>
+</head>
+<body>
+
+    <audio id="background-music" src="game.mp3" loop preload="auto"></audio> <!-- Make sure game.mp3 exists or remove this line -->
+
+    <!-- Side Menu Panel -->
+    <div id="side-menu">
+        <div id="menu-player-name">Player</div>
+        <!-- Renamed ID for clarity -->
+        <button id="side-menu-dark-mode-toggle">Toggle Dark Mode</button>
+    </div>
+
+    <div class="game-container">
+        <!-- Main Menu View -->
+        <div id="main-menu" class="view active">
+            <button id="menu-trigger">&#9776;</button> <!-- Trigger moved here -->
+            <h1>Single Stroke Connect</h1>
+
+            <div class="player-entry-box">
+                <h2>Enter Name</h2>
+                <div class="player-name-section">
+                     <label for="player-name-input">Player:</label>
+                </div>
+                <input type="text" id="player-name-input" placeholder="Type here..." maxlength="20">
+                <button id="start-game-button">Start Game!</button>
+            </div>
+
+            <!-- === NEW: Dark Mode Toggle on Main Menu === -->
+            <button id="main-menu-dark-mode-toggle">Toggle Dark Mode</button>
+
+        </div>
+
+        <!-- Level Select View -->
+        <div id="level-select" class="view">
+            <h2>Choose a Level!</h2>
+            <div id="level-grid"></div>
+            <div class="level-select-controls">
+                <button id="back-to-menu-button">Menu</button>
+            </div>
+        </div>
+
+        <!-- Game Play View -->
+        <div id="game-view" class="view">
+            <div id="game-header">
+                <button id="back-to-levels-button">< Back</button>
+                <div class="game-info">
+                     <span id="level-indicator">Level X</span>
+                     <span id="player-name-display">Player</span>
+                </div>
+                <span id="coin-display">Coins: 0</span>
+            </div>
+            <div id="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <div id="game-controls">
+                <button id="reset-button">Reset</button>
+                <button id="undo-button">Undo</button>
+                <button id="skip-level-button">Skip (500)</button>
+            </div>
+        </div>
+
+        <!-- Level Complete View -->
+        <div id="level-complete" class="view">
+            <h2>Excellent!</h2>
+            <div id="level-complete-controls">
+                <button id="next-level-button">Next Level!</button>
+                <button id="lc-back-to-levels-button">Pick Another</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Constants and Configuration ---
+        const DOT_RADIUS = 11; const LINE_WIDTH_DEFAULT = 6; const LINE_WIDTH_DRAWN = 8; const LINE_WIDTH_LEADING = 4; const HIT_TOLERANCE = 20;
+        const DEFAULT_LINE_COLOR = '#e0e0e0'; const DRAWING_LINE_COLOR = '#9c27b0'; const LEADING_LINE_COLOR = '#ff9800'; const DOT_COLOR = '#7b1fa2';
+        const LOCAL_STORAGE_KEY = 'singleStrokeGameState_v3_coins';
+        const DARK_MODE_KEY = 'singleStrokeDarkMode';
+        const PLAYER_NAME_KEY = 'singleStrokePlayerName';
+        const CONFETTI_COLORS = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+        const CONFETTI_PARTICLE_COUNT = 100; const CONFETTI_DURATION = 2000;
+        const SKIP_COST = 500; const LEVEL_REWARD = 100;
+        const backgroundImages = [];
+        const BONUS_COIN_AMOUNT = 1000;
+        const BONUS_LEVEL_INTERVAL = 50;
+        // Initial coin bonus amount (Changed to 5000)
+        const INITIAL_COIN_BONUS = 5000;
+
+
+        // --- Base Level Data (Original 50 Levels) ---
+        const baseLevels = [ /* ... Level data remains the same ... */
+             // --- Very Easy (1-5) ---
+             { dots: [{x:100, y:150}, {x:200, y:150}], edges: [[0, 1]] }, { dots: [{x:150, y:100}, {x:250, y:200}, {x:50, y:200}], edges: [[0, 1], [1, 2], [2, 0]] }, { dots: [{x:100, y:100}, {x:200, y:100}, {x:200, y:200}, {x:100, y:200}], edges: [[0, 1], [1, 2], [2, 3], [3, 0]] }, { dots: [{x:50, y:150}, {x:150, y:150}, {x:250, y:150}], edges: [[0,1], [1,2]] }, { dots: [{x:150, y:50}, {x:100, y:150}, {x:200, y:150}], edges: [[0,1],[0,2],[1,2]]},
+             // --- Easy (6-15) ---
+             { dots: [ {x: 50, y: 100}, {x: 250, y: 100}, {x: 250, y: 200}, {x: 50, y: 200}, {x: 150, y: 50} ], edges: [ [0, 1], [1, 2], [2, 3], [3, 0], [0, 4], [1, 4] ] }, { dots: [{x:150, y:50}, {x:250, y:150}, {x:150, y:250}, {x:50, y:150}], edges: [[0,1],[1,2],[2,3],[3,0]]}, { dots: [ {x:100, y:100}, {x:200, y:100}, {x:150, y:150}, {x:100, y:200}, {x:200, y:200} ], edges: [ [0, 1], [0, 2], [1, 2], [2, 3], [2, 4], [3, 4] ] }, { dots: [ {x:50, y:100}, {x:150, y:100}, {x:150, y:200}, {x:50, y:200}, {x:50, y:50}, {x:150, y:50} ], edges: [ [0,1], [1,2], [2,3], [3,0], [0,4], [1,5], [4,5] ] }, { dots: [ { x: 150, y: 50 }, { x: 250, y: 130 }, { x: 210, y: 250 }, { x: 90, y: 250 }, { x: 50, y: 130 } ], edges: [ [0, 2], [0, 3], [1, 3], [1, 4], [2, 4] ] }, { dots: [{x:100,y:100},{x:200,y:100},{x:200,y:200},{x:100,y:200},{x:150,y:150}], edges: [[0,1],[1,2],[2,3],[3,0],[0,4],[1,4]] }, { dots: [{x:50, y:150}, {x:150, y:100}, {x:150, y:200}, {x:250, y:150}], edges: [[0,1],[0,2],[1,3],[2,3]] }, { dots: [{x:100, y:50}, {x:200, y:50}, {x:250, y:150}, {x:150, y:250}, {x:50, y:150}], edges: [[0,1],[1,2],[2,3],[3,4],[4,0]] }, { dots: [{x:150, y:50}, {x:50, y:150}, {x:150, y:150}, {x:250, y:150}], edges: [[0,1],[0,2],[0,3],[1,2],[2,3]] }, { dots: [{x:100, y:100}, {x:200, y:100}, {x:200, y:200}, {x:100, y:200}, {x:150, y:50}, {x:150, y:250}], edges: [[0,1],[1,2],[2,3],[3,0],[0,4],[1,4],[2,5],[3,5]] },
+            // --- Medium (16-30) ---
+             { dots: [ {x:50, y:100}, {x:150, y:100}, {x:250, y:100}, {x:50, y:200}, {x:150, y:200}, {x:250, y:200} ], edges: [ [0,1], [1,2], [3,4], [4,5], [0,3], [1,4], [2,5] ] }, { dots: [{x:150, y:50}, {x:250, y:150}, {x:250, y:250}, {x:50, y:250}, {x:50, y:150}], edges: [[0, 1], [0, 4], [1, 2], [2, 3], [3, 4], [1, 4]] }, { dots: [ {x:150, y:50}, {x:100, y:150}, {x:200, y:150}, {x:75, y:250}, {x:225, y:250}, {x:150, y:150} ], edges: [ [0,1], [0,2], [1,3], [2,4], [1,2], [1,5], [2,5] ] }, { dots: [{x:100, y:100}, {x:200, y:100}, {x:100, y:200}, {x:200, y:200}, {x:150, y:150}], edges: [[0,1],[0,2],[1,3],[2,3],[0,4],[1,4],[2,4],[3,4]]}, { dots: [{x:50,y:150},{x:150,y:50},{x:250,y:150},{x:150,y:250}], edges: [[0,1],[1,2],[2,3],[3,0],[1,3],[0,2]]}, { dots: [{x:100,y:50},{x:200,y:50},{x:100,y:150},{x:200,y:150},{x:150,y:250}], edges: [[0,1],[0,2],[1,3],[2,3],[2,4],[3,4]] }, { dots: [{x:50,y:50},{x:250,y:50},{x:150,y:150},{x:50,y:250},{x:250,y:250}], edges: [[0,1],[0,2],[1,2],[2,3],[2,4],[3,4]] }, { dots: [{x:100,y:100},{x:200,y:100},{x:150,y:150},{x:100,y:200},{x:200,y:200},{x:150,y:250}], edges: [[0,1],[0,2],[1,2],[2,3],[2,4],[3,4],[3,5],[4,5]] }, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:150,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[0,3],[1,3],[2,3],[3,4],[3,5],[3,6],[4,5],[5,6]]}, { dots: [{x:100,y:100},{x:200,y:100},{x:250,y:150},{x:200,y:200},{x:100,y:200},{x:50,y:150}], edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[0,3],[1,4],[2,5]]}, { dots: [ {x:50,y:50}, {x:250,y:50}, {x:250,y:250}, {x:50,y:250}, {x:100,y:100}, {x:200,y:100}, {x:200,y:200}, {x:100,y:200} ], edges: [ [0,1],[1,2],[2,3],[3,0], [4,5],[5,6],[6,7],[7,4], [0,4],[1,5],[2,6],[3,7] ] }, { dots: [{x:150,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:150,y:250}], edges: [[0,1],[0,2],[0,3],[1,2],[2,3],[1,4],[3,4],[2,4]]}, { dots: [{x:100, y:50},{x:200,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:100,y:250},{x:200,y:250}], edges: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[3,5],[3,6],[4,6],[5,6]]}, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:50,y:200},{x:250,y:200},{x:150,y:250}], edges: [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[1,2],[3,4]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[0,3],[1,4],[2,5],[3,4],[4,5],[3,6],[4,7],[5,8],[6,7],[7,8]] },
+             // --- Hard (31-45) ---
+             { dots: [ {x:150,y:50}, {x:50,y:100}, {x:250,y:100}, {x:100,y:150}, {x:200,y:150}, {x:50,y:200}, {x:250,y:200}, {x:150,y:250} ], edges: [ [0,1],[0,2],[1,3],[2,4],[3,4],[3,5],[4,6],[5,7],[6,7],[1,5],[2,6] ] }, { dots: [ {x:50,y:50}, {x:150,y:75}, {x:250,y:50}, {x:100,y:150}, {x:200,y:150}, {x:50,y:250}, {x:150,y:225}, {x:250,y:250} ], edges: [ [0,1],[1,2],[0,3],[1,3],[1,4],[2,4],[3,4],[3,5],[4,7],[5,6],[6,7],[3,6],[4,6] ] }, { dots: [ {x:50,y:50},{x:250,y:50},{x:150,y:100},{x:50,y:150},{x:250,y:150},{x:100,y:200},{x:200,y:200},{x:50,y:250},{x:150,y:250},{x:250,y:250} ], edges: [ [0,1],[0,2],[1,2],[0,3],[1,4],[2,3],[2,4],[3,5],[4,6],[5,7],[6,9],[7,8],[8,9],[5,8],[6,8] ] }, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:150,y:150},{x:50,y:200},{x:250,y:200},{x:150,y:250}], edges: [[0,1],[0,2],[0,3],[1,3],[2,3],[1,4],[2,5],[3,4],[3,5],[4,6],[5,6],[4,5]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3],[3,0],[0,4],[1,4],[2,4],[3,4],[4,5],[4,6],[4,7],[4,8]]}, { dots: [{x:150,y:25},{x:250,y:75},{x:275,y:175},{x:200,y:250},{x:100,y:250},{x:25,y:175},{x:50,y:75}], edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[0,3],[1,4],[2,5],[3,6],[4,0],[5,1],[6,2]]}, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:150,y:150},{x:50,y:200},{x:250,y:200},{x:150,y:250},{x:100,y:100},{x:200,y:100},{x:100,y:200},{x:200,y:200}], edges: [[0,7],[0,8],[1,7],[1,9],[2,8],[2,10],[3,9],[3,10],[4,9],[4,10],[5,9],[6,10],[7,8],[9,10]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250},{x:100,y:100},{x:200,y:100},{x:100,y:200},{x:200,y:200}], edges: [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3],[3,0],[9,10],[10,12],[12,11],[11,9],[0,9],[1,9],[1,10],[2,10],[3,11],[4,11],[4,12],[5,12],[6,11],[7,11],[7,12],[8,12]]}, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:150,y:150},{x:50,y:200},{x:250,y:200},{x:150,y:250},{x:100,y:50},{x:200,y:50},{x:100,y:250},{x:200,y:250}], edges: [[0,7],[0,8],[7,1],[8,2],[1,4],[2,5],[4,9],[5,10],[9,6],[10,6],[1,3],[2,3],[4,3],[5,3],[7,3],[8,3],[9,3],[10,3]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[2,4],[4,0],[0,3],[1,4],[2,5],[3,4],[4,5],[3,6],[4,7],[5,8],[6,7],[7,8],[6,4],[8,4]] }, { dots: [{x:150,y:50},{x:50,y:125},{x:250,y:125},{x:50,y:200},{x:250,y:200},{x:150,y:275},{x:150,y:125},{x:100,y:162.5},{x:200,y:162.5}], edges: [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[1,6],[2,6],[3,7],[4,8],[7,6],[8,6],[7,8]] }, { dots: [{x:150,y:50},{x:100,y:100},{x:200,y:100},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:100,y:200},{x:200,y:200},{x:150,y:250}], edges: [[0,1],[0,2],[1,3],[1,4],[2,4],[2,5],[3,6],[4,6],[4,7],[5,7],[6,8],[7,8],[1,6],[2,7]]}, { dots: [{x:50,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:250,y:250}], edges: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[3,5],[3,6],[4,6],[5,6]] }, { dots: [{x:150,y:50},{x:50,y:150},{x:250,y:150},{x:150,y:250},{x:100,y:100},{x:200,y:100},{x:100,y:200},{x:200,y:200}], edges: [[0,4],[0,5],[1,4],[1,6],[2,5],[2,7],[3,6],[3,7],[4,5],[4,6],[5,7],[6,7]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:100,y:100},{x:200,y:100},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:100,y:200},{x:200,y:200},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[2,4],[4,7],[7,12],[12,11],[11,10],[10,5],[5,3],[3,0],[1,3],[1,4],[3,6],[4,6],[2,7],[5,6],[6,7],[5,8],[6,9],[8,11],[9,11],[7,9],[8,10],[10,11],[11,12]]},
+            // --- Very Hard (46-50) ---
+            { dots: [ { x: 150, y: 50 }, { x: 250, y: 130 }, { x: 210, y: 250 }, { x: 90, y: 250 }, { x: 50, y: 130 } ], edges: [ [0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [0, 2], [1, 3], [2, 4], [3, 0], [4, 1] ] }, { dots: [{x:150,y:25},{x:250,y:100},{x:200,y:175},{x:150,y:250},{x:100,y:175},{x:50,y:100},{x:150,y:125}], edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6]]}, { dots: [{x:50,y:50},{x:150,y:50},{x:250,y:50},{x:50,y:150},{x:150,y:150},{x:250,y:150},{x:50,y:250},{x:150,y:250},{x:250,y:250}], edges: [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3],[3,0],[0,4],[1,4],[2,4],[3,4],[4,5],[4,6],[4,7],[4,8],[3,7],[5,7]]}, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:100,y:150},{x:200,y:150},{x:50,y:200},{x:250,y:200},{x:150,y:250},{x:150,y:100},{x:100,y:175},{x:200,y:175}], edges: [[0,1],[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[6,7],[1,5],[2,6],[0,8],[8,3],[8,4],[3,9],[4,10],[9,5],[10,6],[9,7],[10,7]]}, { dots: [{x:150,y:50},{x:50,y:100},{x:250,y:100},{x:50,y:200},{x:250,y:200},{x:150,y:250},{x:100,y:75},{x:200,y:75},{x:100,y:225},{x:200,y:225},{x:150,y:150}], edges: [[0,6],[0,7],[6,1],[7,2],[1,3],[2,4],[3,8],[4,9],[8,5],[9,5],[1,10],[2,10],[3,10],[4,10],[5,10],[6,10],[7,10],[8,10],[9,10]]}
+        ];
+
+        // Generate 500 levels by repeating the base 50 levels
+        const levels = [];
+        const totalTargetLevels = 500;
+        const baseLevelCount = baseLevels.length;
+        for (let i = 0; i < totalTargetLevels; i++) {
+            const baseLevelIndex = i % baseLevelCount;
+            const newLevel = JSON.parse(JSON.stringify(baseLevels[baseLevelIndex]));
+            levels.push(newLevel);
+        }
+        console.log(`Generated ${levels.length} levels.`);
+
+
+        // --- DOM Elements ---
+        let views, mainMenu, levelSelectView, levelGrid, gameView, levelCompleteView,
+            canvasContainer, canvas, ctx, levelIndicator, startGameButton, backToMenuButton,
+            backToLevelsButton, resetButton, undoButton, nextLevelButton, lcBackToLevelsButton,
+            bgMusic, bodyElement, sideMenuDarkModeToggle, menuTrigger, sideMenu, // Renamed side menu toggle
+            coinDisplay, skipLevelButton, playerNameInput, playerNameDisplay, menuPlayerNameDisplay,
+            mainMenuDarkModeToggle; // NEW: Main menu toggle button
+
+        function getDOMElements() {
+            try {
+                views = document.querySelectorAll('.view'); mainMenu = document.getElementById('main-menu');
+                levelSelectView = document.getElementById('level-select'); levelGrid = document.getElementById('level-grid');
+                gameView = document.getElementById('game-view'); levelCompleteView = document.getElementById('level-complete');
+                canvasContainer = document.getElementById('canvas-container'); canvas = document.getElementById('gameCanvas');
+                ctx = canvas ? canvas.getContext('2d') : null; levelIndicator = document.getElementById('level-indicator');
+                startGameButton = document.getElementById('start-game-button'); backToMenuButton = document.getElementById('back-to-menu-button');
+                backToLevelsButton = document.getElementById('back-to-levels-button'); resetButton = document.getElementById('reset-button');
+                undoButton = document.getElementById('undo-button'); nextLevelButton = document.getElementById('next-level-button');
+                lcBackToLevelsButton = document.getElementById('lc-back-to-levels-button'); bgMusic = document.getElementById('background-music');
+                bodyElement = document.body;
+                // Updated IDs
+                sideMenuDarkModeToggle = document.getElementById('side-menu-dark-mode-toggle');
+                mainMenuDarkModeToggle = document.getElementById('main-menu-dark-mode-toggle'); // Get new button
+                menuTrigger = document.getElementById('menu-trigger'); sideMenu = document.getElementById('side-menu');
+                coinDisplay = document.getElementById('coin-display'); skipLevelButton = document.getElementById('skip-level-button');
+                playerNameInput = document.getElementById('player-name-input'); playerNameDisplay = document.getElementById('player-name-display');
+                menuPlayerNameDisplay = document.getElementById('menu-player-name');
+                // Check all elements, including the new one
+                if (!canvas || !ctx || !levelGrid || !mainMenu || !levelSelectView || !gameView || !levelCompleteView || !startGameButton || !sideMenuDarkModeToggle || !mainMenuDarkModeToggle || !menuTrigger || !sideMenu || !coinDisplay || !skipLevelButton || !playerNameInput || !playerNameDisplay || !menuPlayerNameDisplay ) { throw new Error("Missing critical DOM elements"); }
+                return true;
+            } catch (error) { console.error("FATAL:", error); if(bodyElement) bodyElement.innerHTML = "<h1>Error: Assets missing. Reload.</h1>"; return false; }
+        }
+
+        // --- Game State ---
+        let currentLevelIndex = -1, gameState = { completedLevels: [], coins: 0 }, playerName = '', isDrawing = false, currentPath = [], tracedEdges = new Set(), canvasOffset = { left: 0, top: 0 }, scaleFactor = 1, currentPointerPos = null, particles = [], isConfettiAnimating = false, confettiAnimationId = null, isDarkMode = false;
+
+        // --- Background & UI Functions ---
+        function setBackground() { if(!bodyElement) return; bodyElement.style.backgroundImage = bodyElement.classList.contains('dark-mode') ? 'linear-gradient(135deg, #2c3e50 0%, #4c5a65 100%)' : 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)'; }
+        function openSideMenu() { if(sideMenu) sideMenu.classList.add('open'); updatePlayerNameDisplay(); }
+        function closeSideMenu() { if(sideMenu) sideMenu.classList.remove('open'); }
+        function toggleSideMenu() { if(sideMenu) sideMenu.classList.toggle('open'); if(sideMenu.classList.contains('open')) updatePlayerNameDisplay(); }
+        function applyDarkMode(enabled) {
+            if(!bodyElement || !sideMenuDarkModeToggle || !mainMenuDarkModeToggle) return; // Check both toggles
+            isDarkMode = enabled;
+            const buttonText = enabled ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+            if (enabled) {
+                bodyElement.classList.add('dark-mode');
+            } else {
+                bodyElement.classList.remove('dark-mode');
+            }
+            // Update text on BOTH buttons
+            sideMenuDarkModeToggle.textContent = buttonText;
+            mainMenuDarkModeToggle.textContent = buttonText;
+            setBackground();
+            try {
+                localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+            } catch (e) {
+                console.error("Save dark mode fail:", e);
+            }
+        }
+        function loadDarkModePreference() { try { const p = localStorage.getItem(DARK_MODE_KEY); applyDarkMode(p === 'true'); } catch (e) { console.error("Load dark mode fail:", e); applyDarkMode(false); } }
+        function updateCoinDisplay() { if (coinDisplay) { coinDisplay.textContent = `Coins: ${gameState.coins}`; } }
+        function updateSkipButtonState() { if (!skipLevelButton) return; const last = currentLevelIndex >= levels.length - 1; skipLevelButton.disabled = !(gameState.coins >= SKIP_COST && !last); skipLevelButton.title = last ? "Cannot skip last level" : `Need ${SKIP_COST} coins (Have ${gameState.coins})`; }
+        function loadPlayerName() { try { playerName = localStorage.getItem(PLAYER_NAME_KEY) || ''; if (playerNameInput) playerNameInput.value = playerName; } catch (e) { console.error("Load name fail:", e); playerName = ''; } }
+        function savePlayerName() { if (!playerNameInput) return; const newName = playerNameInput.value.trim(); if (newName !== playerName) { playerName = newName; try { localStorage.setItem(PLAYER_NAME_KEY, playerName); } catch (e) { console.error("Save name fail:", e); } } updatePlayerNameDisplay(); }
+        function updatePlayerNameDisplay() { const disp = playerName || 'Player'; if (playerNameDisplay) { playerNameDisplay.textContent = disp; playerNameDisplay.title = disp; } if (menuPlayerNameDisplay) { menuPlayerNameDisplay.textContent = disp; } }
+
+        // --- Skip Level ---
+        function skipLevel() { if (currentLevelIndex < 0 || currentLevelIndex >= levels.length - 1 || gameState.coins < SKIP_COST) { return; } console.log(`Skipping level ${currentLevelIndex + 1}`); gameState.coins -= SKIP_COST; if (!gameState.completedLevels.includes(currentLevelIndex)) { gameState.completedLevels.push(currentLevelIndex); } updateCoinDisplay(); saveGameState(); startLevel(currentLevelIndex + 1); }
+
+        // --- Initialization ---
+        function init() { console.log("Init..."); if (!getDOMElements()) return; try { loadGameState(); loadPlayerName(); loadDarkModePreference(); updateCoinDisplay(); updatePlayerNameDisplay(); setupCanvas(); addEventListeners(); setBackground(); showView('main-menu'); window.addEventListener('resize', setupCanvas); console.log("Init OK."); } catch (e) { console.error("Init Error:", e); if(bodyElement) bodyElement.innerHTML = "<h1>Error. Refresh.</h1>"; } }
+
+        // --- Canvas & Drawing ---
+        function setupCanvas() { if (!canvasContainer || !canvas || !ctx) return; const cw = canvasContainer.clientWidth; const ch = canvasContainer.clientHeight; const bw = 300; const bh = 300; if (cw <= 0 || ch <= 0) { requestAnimationFrame(setupCanvas); return; } scaleFactor = Math.min(cw / bw, ch / bh) * 0.90; canvas.width = bw * scaleFactor; canvas.height = bh * scaleFactor; const rect = canvas.getBoundingClientRect(); canvasOffset = { left: rect.left + window.scrollX, top: rect.top + window.scrollY }; if (currentLevelIndex !== -1 && !isConfettiAnimating) drawLevel(); }
+        function getScaledCoords(dot) { return (typeof dot?.x !== 'number' || typeof dot?.y !== 'number') ? { x: 0, y: 0 } : { x: dot.x * scaleFactor, y: dot.y * scaleFactor }; }
+        function drawLevel() {
+             if (currentLevelIndex < 0 || currentLevelIndex >= levels.length || scaleFactor <= 0 || !ctx || !canvas) return; const level = levels[currentLevelIndex]; if (!level || !level.dots || !level.edges) { console.error(`Invalid level data at index ${currentLevelIndex}`); showView('level-select'); return; }
+             try {
+                 ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = DEFAULT_LINE_COLOR; ctx.lineWidth = LINE_WIDTH_DEFAULT * scaleFactor; ctx.lineCap = 'round';
+                 level.edges.forEach((e) => { if (!e || e.length<2 || e[0]>=level.dots.length || e[1]>=level.dots.length || e[0]<0 || e[1]<0) return; const d1=getScaledCoords(level.dots[e[0]]); const d2=getScaledCoords(level.dots[e[1]]); ctx.beginPath(); ctx.moveTo(d1.x,d1.y); ctx.lineTo(d2.x,d2.y); ctx.stroke(); });
+                 ctx.strokeStyle = DRAWING_LINE_COLOR; ctx.lineWidth = LINE_WIDTH_DRAWN * scaleFactor; ctx.lineJoin = 'round';
+                 if (currentPath.length > 1) { ctx.beginPath(); const sIdx=currentPath[0]; if (sIdx>=0 && sIdx<level.dots.length){ const sDot=getScaledCoords(level.dots[sIdx]); ctx.moveTo(sDot.x,sDot.y); for(let i=1;i<currentPath.length;i++){ const dIdx=currentPath[i]; if(dIdx>=0 && dIdx<level.dots.length){ ctx.lineTo(getScaledCoords(level.dots[dIdx]).x, getScaledCoords(level.dots[dIdx]).y); } } ctx.stroke(); } }
+                 if (isDrawing && currentPath.length>0 && currentPointerPos) { const lIdx=currentPath[currentPath.length-1]; if (lIdx>=0 && lIdx<level.dots.length) { const lCo=getScaledCoords(level.dots[lIdx]); ctx.strokeStyle=LEADING_LINE_COLOR; ctx.lineWidth=LINE_WIDTH_LEADING*scaleFactor; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(lCo.x,lCo.y); ctx.lineTo(currentPointerPos.x,currentPointerPos.y); ctx.stroke(); } }
+                 level.dots.forEach((d) => { const sD=getScaledCoords(d); ctx.beginPath(); ctx.arc(sD.x,sD.y, DOT_RADIUS*scaleFactor,0,Math.PI*2); ctx.fillStyle=DOT_COLOR; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1*scaleFactor; ctx.stroke(); });
+                 if(undoButton) undoButton.disabled = currentPath.length <= 1; updateSkipButtonState();
+             } catch (e) { console.error(`Draw Error Lvl ${currentLevelIndex + 1}:`, e); showView('level-select'); alert(`Draw Error Lvl ${currentLevelIndex + 1}.`); }
+        }
+        function createConfettiParticle(){const s=(Math.random()*5+3)*scaleFactor;return{x:Math.random()*canvas.width,y:-s,size:s,vx:Math.random()*4-2,vy:Math.random()*3+1,color:CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)],opacity:1,lifespan:120};}
+        function startConfettiEffect(){if(!canvas||!canvas.width||!canvas.height||!ctx)return;particles=[];for(let i=0;i<CONFETTI_PARTICLE_COUNT;i++){particles.push(createConfettiParticle());}isConfettiAnimating=true;animateConfetti();}
+        function animateConfetti(){if(!isConfettiAnimating||!ctx)return;confettiAnimationId=requestAnimationFrame(animateConfetti);ctx.clearRect(0,0,canvas.width,canvas.height);drawLevel();const g=0.05;particles.forEach((p,i)=>{p.vy+=g;p.x+=p.vx;p.y+=p.vy;p.lifespan--;p.opacity=Math.max(0,p.lifespan/60);if(p.lifespan<=0||p.y>canvas.height){particles.splice(i,1);}else{ctx.globalAlpha=p.opacity;ctx.fillStyle=p.color;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);ctx.globalAlpha=1.0;}});if(particles.length===0){isConfettiAnimating=false;cancelAnimationFrame(confettiAnimationId);}}
+
+        // --- Views & Navigation ---
+        function showView(viewId) { if (!views || views.length === 0) return; console.log("View:", viewId); closeSideMenu(); if (isConfettiAnimating) { cancelAnimationFrame(confettiAnimationId); isConfettiAnimating = false; particles = []; } views.forEach(v => v.classList.remove('active')); const activeView = document.getElementById(viewId); if (activeView) { activeView.classList.add('active'); if (viewId==='level-select') populateLevelSelect(); else if (viewId==='game-view') { if (currentLevelIndex === -1) showView('level-select'); else { updateCoinDisplay(); updateSkipButtonState(); updatePlayerNameDisplay(); requestAnimationFrame(setupCanvas); } }
+        // Show menu trigger only on game/level views
+        if (menuTrigger) menuTrigger.style.display = (viewId === 'game-view' || viewId === 'level-select') ? 'block' : 'none';
+        } else { console.error(`View "${viewId}" missing!`); if (mainMenu) mainMenu.classList.add('active'); if (menuTrigger) menuTrigger.style.display = 'none'; } }
+        function populateLevelSelect() { if (!levelGrid || !levels) return; levelGrid.innerHTML = ''; levels.forEach((l, i) => { const btn = document.createElement('button'); btn.classList.add('level-button'); btn.textContent=i+1; btn.dataset.levelIndex=i; const comp=gameState.completedLevels.includes(i); const lock=i>0 && !gameState.completedLevels.includes(i-1); if(comp) btn.classList.add('completed'); if(lock){btn.classList.add('locked');btn.disabled=true;}else{btn.addEventListener('click',()=>startLevel(i));} levelGrid.appendChild(btn); }); }
+        function startLevel(index) { if (isConfettiAnimating) { cancelAnimationFrame(confettiAnimationId); isConfettiAnimating = false; particles = []; } if (index < 0 || index >= levels.length) { showView('level-select'); return; } if (!levelIndicator) return; currentLevelIndex=index; resetLevelState(); levelIndicator.textContent=`Level ${currentLevelIndex + 1}`; showView('game-view'); requestAnimationFrame(drawLevel); }
+
+        // --- Event Listeners & Input Handling ---
+        function addEventListeners() {
+             // Check includes the new main menu toggle
+             if (!startGameButton || !backToMenuButton || !backToLevelsButton || !lcBackToLevelsButton || !nextLevelButton || !resetButton || !undoButton || !canvas || !sideMenuDarkModeToggle || !mainMenuDarkModeToggle || !menuTrigger || !sideMenu || !skipLevelButton || !playerNameInput) return;
+            startGameButton.addEventListener('click', () => { savePlayerName(); showView('level-select'); if (bgMusic && bgMusic.paused) { bgMusic.play().catch(e=>console.warn("Music fail:",e)); } });
+            playerNameInput.addEventListener('change', savePlayerName);
+            backToMenuButton.addEventListener('click', () => showView('main-menu')); backToLevelsButton.addEventListener('click', () => showView('level-select')); lcBackToLevelsButton.addEventListener('click', () => showView('level-select'));
+            nextLevelButton.addEventListener('click', () => { const nextL=currentLevelIndex+1; if(nextL<levels.length){const lock=nextL>0 && !gameState.completedLevels.includes(nextL-1); if(!lock) startLevel(nextL); else showView('level-select');} else showView('level-select'); });
+            resetButton.addEventListener('click', resetCurrentLevel); undoButton.addEventListener('click', undoMove); skipLevelButton.addEventListener('click', skipLevel);
+            canvas.addEventListener('mousedown', handlePointerDown); canvas.addEventListener('mousemove', handlePointerMove); canvas.addEventListener('mouseup', handlePointerUp); canvas.addEventListener('mouseleave', handlePointerLeave); canvas.addEventListener('touchstart', handlePointerDown, { passive: false }); canvas.addEventListener('touchmove', handlePointerMove, { passive: false }); canvas.addEventListener('touchend', handlePointerUp); canvas.addEventListener('touchcancel', handlePointerUp);
+            menuTrigger.addEventListener('click', toggleSideMenu);
+            // Add listeners for BOTH dark mode toggles
+            sideMenuDarkModeToggle.addEventListener('click', () => { applyDarkMode(!isDarkMode); });
+            mainMenuDarkModeToggle.addEventListener('click', () => { applyDarkMode(!isDarkMode); }); // Listener for main menu button
+            document.addEventListener('click', (e) => { if (sideMenu && sideMenu.classList.contains('open') && !sideMenu.contains(e.target) && !menuTrigger.contains(e.target)) { closeSideMenu(); } });
+         }
+        function getPointerPos(e){e.preventDefault();let cX,cY;if(e.touches&&e.touches.length>0){cX=e.touches[0].clientX;cY=e.touches[0].clientY;}else if(e.changedTouches&&e.changedTouches.length>0){cX=e.changedTouches[0].clientX;cY=e.changedTouches[0].clientY;}else if(typeof e.clientX==='number'&&typeof e.clientY==='number'){cX=e.clientX;cY=e.clientY;}else{return null;}if(!canvas)return null;const rect=canvas.getBoundingClientRect();if(!rect)return null;return{x:cX-rect.left,y:cY-rect.top};}
+        function findNearbyDot(pos){if(!pos||currentLevelIndex<0||currentLevelIndex>=levels.length)return -1;const level=levels[currentLevelIndex];if(!level||!level.dots)return -1;let closest=-1;let minDistSq=(HIT_TOLERANCE*scaleFactor)**2;level.dots.forEach((d,i)=>{if(typeof d?.x!=='number'||typeof d?.y!=='number'){return;}const sDot=getScaledCoords(d);const dx=pos.x-sDot.x;const dy=pos.y-sDot.y;const distSq=dx*dx+dy*dy;if(distSq<minDistSq){minDistSq=distSq;closest=i;}});return closest;}
+        function handlePointerDown(e){if(isDrawing||currentLevelIndex<0||isConfettiAnimating)return;const pos=getPointerPos(e);if(!pos)return;const startDot=findNearbyDot(pos);if(startDot!==-1){isDrawing=true;currentPointerPos=pos;currentPath=[startDot];tracedEdges.clear();drawLevel();}}
+        function handlePointerMove(e){if(!isDrawing||currentPath.length===0||currentLevelIndex<0||isConfettiAnimating)return;const pos=getPointerPos(e);if(!pos)return;currentPointerPos=pos;const targetDot=findNearbyDot(pos);const currentDot=currentPath[currentPath.length-1];let redraw=true;if(targetDot!==-1&&targetDot!==currentDot){const key=getEdgeKey(currentDot,targetDot);if(edgeExists(currentDot,targetDot)&&!tracedEdges.has(key)){currentPath.push(targetDot);tracedEdges.add(key);}}if(redraw){drawLevel();}}
+        function handlePointerUp(e){if(!isDrawing||currentLevelIndex<0||isConfettiAnimating)return;isDrawing=false;currentPointerPos=null;checkWinCondition();if(!isConfettiAnimating){drawLevel();}}
+        function handlePointerLeave(e){if(!isDrawing||currentLevelIndex<0||isConfettiAnimating)return;isDrawing=false;currentPointerPos=null;if(!isConfettiAnimating){drawLevel();}}
+
+        // --- Game Logic ---
+        function getEdgeKey(d1,d2){return`${Math.min(d1,d2)}-${Math.max(d1,d2)}`;}
+        function edgeExists(d1,d2){if(currentLevelIndex<0||currentLevelIndex>=levels.length)return false;const level=levels[currentLevelIndex];if(!level||!level.edges)return false;const key=getEdgeKey(d1,d2);return level.edges.some(e=>Array.isArray(e)&&e.length===2&&typeof e[0]==='number'&&typeof e[1]==='number'&&e[0]>=0&&e[1]>=0&&getEdgeKey(e[0],e[1])===key);}
+        function resetLevelState(){if(isConfettiAnimating){cancelAnimationFrame(confettiAnimationId);isConfettiAnimating=false;particles=[];}isDrawing=false;currentPath=[];tracedEdges.clear();currentPointerPos=null;if(undoButton)undoButton.disabled=true;if(skipLevelButton)updateSkipButtonState();}
+        function resetCurrentLevel(){if(currentLevelIndex<0)return;resetLevelState();drawLevel();}
+        function undoMove(){if(currentPath.length<=1||currentLevelIndex<0||isConfettiAnimating)return;const last=currentPath.pop();const secondLast=currentPath[currentPath.length-1];if(typeof last!=='number'||typeof secondLast!=='number'){return;}const key=getEdgeKey(last,secondLast);tracedEdges.delete(key);currentPointerPos=null;drawLevel();}
+        function checkWinCondition(){
+            if(currentLevelIndex<0||currentLevelIndex>=levels.length||isDrawing||isConfettiAnimating)return;const level=levels[currentLevelIndex];if(!level||!level.edges||!level.dots)return;const totalEdges=level.edges.length;const tracedCount=tracedEdges.size;
+            if(tracedCount===totalEdges&&totalEdges>0){
+                let firstTime=false;
+                let awardedBonus = false;
+                if(!gameState.completedLevels.includes(currentLevelIndex)){
+                    gameState.completedLevels.push(currentLevelIndex);
+                    firstTime=true;
+                    const completedLevelNumber = currentLevelIndex + 1;
+                    if (completedLevelNumber > 0 && completedLevelNumber % BONUS_LEVEL_INTERVAL === 0) {
+                        gameState.coins += BONUS_COIN_AMOUNT;
+                        awardedBonus = true;
+                        console.log(`🎉 BONUS! +${BONUS_COIN_AMOUNT} coins for completing Level ${completedLevelNumber}!`);
+                    }
+                }
+                if(firstTime){
+                    gameState.coins+=LEVEL_REWARD;
+                    console.log(`+${LEVEL_REWARD} coins for completing Level ${currentLevelIndex + 1}.`);
+                    updateCoinDisplay();
+                }
+                saveGameState();
+                if(nextLevelButton)nextLevelButton.disabled=currentLevelIndex>=levels.length-1;
+
+                if (awardedBonus) {
+                    setTimeout(() => {
+                         alert(`🎉 Bonus! You earned ${BONUS_COIN_AMOUNT} extra coins for reaching Level ${currentLevelIndex + 1}! 🎉`);
+                    }, 100);
+                }
+
+                startConfettiEffect();
+                setTimeout(()=>{
+                    if(gameView&&gameView.classList.contains('active')){
+                        showView('level-complete');
+                    }
+                    isConfettiAnimating=false;
+                    if(confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+                    particles=[];
+                },CONFETTI_DURATION);
+            }
+        }
+
+        // --- Persistence ---
+        function saveGameState(){try{localStorage.setItem(LOCAL_STORAGE_KEY,JSON.stringify(gameState));}catch(e){console.error("Save fail:",e);}}
+        // Load Game State with Initial Bonus (5000 coins)
+        function loadGameState(){
+            let defaultState={completedLevels:[],coins:0};
+            let isFirstLoad = false; // Flag to check if it's the first time
+
+            try {
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (saved === null) { // Check if storage item *does not exist*
+                    isFirstLoad = true;
+                    console.log("First load detected, awarding initial coins.");
+                    defaultState.coins = INITIAL_COIN_BONUS; // Award bonus (now 5000)
+                } else {
+                    const loaded = JSON.parse(saved);
+                    if(loaded && typeof loaded === 'object'){
+                        if(Array.isArray(loaded.completedLevels)) defaultState.completedLevels = loaded.completedLevels;
+                        // Load saved coins only if it wasn't the first load
+                        if(typeof loaded.coins === 'number' && !isNaN(loaded.coins)) {
+                             defaultState.coins = loaded.coins;
+                        } else {
+                            // If coins property is missing/invalid, but data exists, set to 0
+                            defaultState.coins = 0;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Load state fail:", e);
+                 // If error occurs during loading, check if it was supposed to be first load
+                 if (localStorage.getItem(LOCAL_STORAGE_KEY) === null) {
+                     isFirstLoad = true;
+                     console.log("First load detected (after error check), awarding initial coins.");
+                     defaultState.coins = INITIAL_COIN_BONUS; // Award bonus even on error if it looks like first load
+                 }
+            }
+            gameState = defaultState;
+
+            // IMPORTANT: Save the state immediately if it was the first load to store the bonus coins
+            if (isFirstLoad) {
+                saveGameState();
+            }
+        }
+
+        // --- Start Game ---
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
+</html>
